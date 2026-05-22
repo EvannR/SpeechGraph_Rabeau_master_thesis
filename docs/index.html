@@ -476,48 +476,50 @@
     if (drawnEdges.has(key)) { pulseNode(to); return; }
     drawnEdges.add(key);
 
-    const { x: x1, y: y1 } = NODES[from];
-    const { x: x2, y: y2 } = NODES[to];
-
-    // Arrow marker
+    const n1 = NODES[from], n2 = NODES[to];
+    const dx = n2.x - n1.x, dy = n2.y - n1.y;
+    const len = Math.sqrt(dx*dx + dy*dy);
+    const color = isBack ? '#E63946' : '#1a1a2e';
     const markerId = isBack ? 'arrow-red' : 'arrow-dark';
+
+    // Create arrowhead marker if not yet in the SVG
     if (!svg.querySelector(`#${markerId}`)) {
-      const defs = svg.querySelector('defs') || svg.insertBefore(svgEl('defs', {}), svg.firstChild);
+      let defs = svg.querySelector('defs');
+      if (!defs) { defs = svgEl('defs', {}); svg.insertBefore(defs, svg.firstChild); }
       const marker = svgEl('marker', {
-        id: markerId, markerWidth: 8, markerHeight: 8,
-        refX: 6, refY: 3, orient: 'auto',
+        id: markerId, markerWidth: 10, markerHeight: 7,
+        refX: 10, refY: 3.5, orient: 'auto',
       });
-      const poly = svgEl('polygon', {
-        points: '0 0, 8 3, 0 6',
-        fill: isBack ? '#E63946' : '#1a1a2e',
-      });
-      marker.appendChild(poly);
+      marker.appendChild(svgEl('polygon', { points: '0 0, 10 3.5, 0 7', fill: color }));
       defs.appendChild(marker);
     }
 
-    // Control point for curve
-    const mx = (x1 + x2) / 2;
-    const my = (y1 + y2) / 2;
-    const dx = x2 - x1, dy = y2 - y1;
-    const len = Math.sqrt(dx*dx + dy*dy);
-    const curve = isBack ? 70 : 0;
-    const cx = mx - (dy / len) * curve;
-    const cy = my + (dx / len) * curve;
-
-    const d = `M ${x1} ${y1} Q ${cx} ${cy} ${x2} ${y2}`;
+    // Offset endpoints to circle boundaries so arrowhead is visible
+    const PAD = 5;
+    let d;
+    if (!isBack) {
+      const sx = n1.x + R * dx/len,       sy = n1.y + R * dy/len;
+      const ex = n2.x - (R+PAD) * dx/len, ey = n2.y - (R+PAD) * dy/len;
+      d = `M ${sx} ${sy} L ${ex} ${ey}`;
+    } else {
+      const mx = (n1.x + n2.x) / 2, my = (n1.y + n2.y) / 2;
+      const cpx = mx - (dy/len)*70,  cpy = my + (dx/len)*70;
+      // Tangent at bezier endpoint: direction from control point to endpoint
+      const tdx = n2.x - cpx, tdy = n2.y - cpy;
+      const tlen = Math.sqrt(tdx*tdx + tdy*tdy);
+      const sx = n1.x + R * dx/len,           sy = n1.y + R * dy/len;
+      const ex = n2.x - (R+PAD) * tdx/tlen,   ey = n2.y - (R+PAD) * tdy/tlen;
+      d = `M ${sx} ${sy} Q ${cpx} ${cpy} ${ex} ${ey}`;
+    }
 
     const path = svgEl('path', {
-      d, fill: 'none',
-      stroke: isBack ? '#E63946' : '#1a1a2e',
-      'stroke-width': 2,
-      'stroke-opacity': 0.8,
+      d, fill: 'none', stroke: color,
+      'stroke-width': 2, 'stroke-opacity': 0.85,
       'marker-end': `url(#${markerId})`,
-      'stroke-dasharray': 300,
-      'stroke-dashoffset': 300,
+      'stroke-dasharray': 300, 'stroke-dashoffset': 300,
     });
     edgeGroup.appendChild(path);
 
-    // Animate dash
     let offset = 300;
     const drawLine = setInterval(() => {
       offset = Math.max(offset - 18, 0);
