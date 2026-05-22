@@ -482,49 +482,51 @@
     const color = isBack ? '#E63946' : '#1a1a2e';
     const markerId = isBack ? 'arrow-red' : 'arrow-dark';
 
-    // Create arrowhead marker if not yet in the SVG
+    // Arrowhead marker — use userSpaceOnUse so size is independent of stroke-width
     if (!svg.querySelector(`#${markerId}`)) {
       let defs = svg.querySelector('defs');
       if (!defs) { defs = svgEl('defs', {}); svg.insertBefore(defs, svg.firstChild); }
       const marker = svgEl('marker', {
-        id: markerId, markerWidth: 10, markerHeight: 7,
-        refX: 10, refY: 3.5, orient: 'auto',
+        id: markerId,
+        markerWidth: '14', markerHeight: '10',
+        refX: '13', refY: '5',
+        orient: 'auto',
+        markerUnits: 'userSpaceOnUse',
       });
-      marker.appendChild(svgEl('polygon', { points: '0 0, 10 3.5, 0 7', fill: color }));
+      marker.appendChild(svgEl('polygon', { points: '0 0, 14 5, 0 10', fill: color }));
       defs.appendChild(marker);
     }
 
-    // Offset endpoints to circle boundaries so arrowhead is visible
-    const PAD = 5;
+    // Stop path at circle boundary so arrowhead is not hidden behind node
+    const PAD = 14; // arrowhead length in user space
     let d;
     if (!isBack) {
-      const sx = n1.x + R * dx/len,       sy = n1.y + R * dy/len;
-      const ex = n2.x - (R+PAD) * dx/len, ey = n2.y - (R+PAD) * dy/len;
+      const sx = n1.x + R * dx/len,         sy = n1.y + R * dy/len;
+      const ex = n2.x - (R + PAD) * dx/len, ey = n2.y - (R + PAD) * dy/len;
       d = `M ${sx} ${sy} L ${ex} ${ey}`;
     } else {
-      const mx = (n1.x + n2.x) / 2, my = (n1.y + n2.y) / 2;
-      const cpx = mx - (dy/len)*70,  cpy = my + (dx/len)*70;
-      // Tangent at bezier endpoint: direction from control point to endpoint
-      const tdx = n2.x - cpx, tdy = n2.y - cpy;
+      const mx = (n1.x + n2.x) / 2,   my = (n1.y + n2.y) / 2;
+      const cpx = mx - (dy/len) * 70,  cpy = my + (dx/len) * 70;
+      const tdx = n2.x - cpx,          tdy = n2.y - cpy;
       const tlen = Math.sqrt(tdx*tdx + tdy*tdy);
-      const sx = n1.x + R * dx/len,           sy = n1.y + R * dy/len;
-      const ex = n2.x - (R+PAD) * tdx/tlen,   ey = n2.y - (R+PAD) * tdy/tlen;
+      const sx = n1.x + R * dx/len,             sy = n1.y + R * dy/len;
+      const ex = n2.x - (R + PAD) * tdx/tlen,   ey = n2.y - (R + PAD) * tdy/tlen;
       d = `M ${sx} ${sy} Q ${cpx} ${cpy} ${ex} ${ey}`;
     }
 
+    // Use opacity fade — stroke-dasharray conflicts with marker-end in SVG
     const path = svgEl('path', {
       d, fill: 'none', stroke: color,
-      'stroke-width': 2, 'stroke-opacity': 0.85,
+      'stroke-width': '2', opacity: '0',
       'marker-end': `url(#${markerId})`,
-      'stroke-dasharray': 300, 'stroke-dashoffset': 300,
     });
     edgeGroup.appendChild(path);
 
-    let offset = 300;
-    const drawLine = setInterval(() => {
-      offset = Math.max(offset - 18, 0);
-      path.setAttribute('stroke-dashoffset', offset);
-      if (offset <= 0) clearInterval(drawLine);
+    let op = 0;
+    const fadeIn = setInterval(() => {
+      op = Math.min(op + 0.08, 1);
+      path.setAttribute('opacity', op);
+      if (op >= 1) clearInterval(fadeIn);
     }, 16);
   }
 
