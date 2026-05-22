@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SpeechGraph — Evann Rabeau</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --red:    #E63946;
+      --orange: #FF8C42;
+      --dark:   #1a1a2e;
+      --mid:    #4a4a6a;
+      --light:  #f4f4f8;
+      --white:  #ffffff;
+      --node:   #FFC107;
+      --node-stroke: #CC9900;
+      --radius: 12px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--white);
+      color: var(--dark);
+      line-height: 1.7;
+    }
+
+    /* ── NAV ─────────────────────────────────────────────────────── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1rem 2.5rem;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+    }
+    nav .logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.1rem;
+      color: var(--dark);
+      text-decoration: none;
+    }
+    nav .logo span { color: var(--red); }
+    nav a.gh-link {
+      font-size: 0.85rem; font-weight: 600;
+      color: var(--dark); text-decoration: none;
+      border: 1.5px solid var(--dark);
+      padding: 0.35rem 0.9rem; border-radius: 20px;
+      transition: all 0.2s;
+    }
+    nav a.gh-link:hover { background: var(--dark); color: var(--white); }
+
+    /* ── HERO ────────────────────────────────────────────────────── */
+    .hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      justify-content: center; align-items: center;
+      text-align: center;
+      padding: 7rem 2rem 4rem;
+      background: linear-gradient(160deg, #fff 55%, #fff5f0 100%);
+    }
+    .hero-tag {
+      display: inline-block;
+      font-size: 0.75rem; font-weight: 600; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--red);
+      border: 1.5px solid var(--red);
+      padding: 0.3rem 0.8rem; border-radius: 20px;
+      margin-bottom: 1.5rem;
+    }
+    .hero h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2.4rem, 6vw, 4.2rem);
+      line-height: 1.15;
+      color: var(--dark);
+      margin-bottom: 1.2rem;
+    }
+    .hero h1 span { color: var(--red); }
+    .hero p {
+      max-width: 580px;
+      font-size: 1.1rem; font-weight: 300;
+      color: var(--mid);
+      margin-bottom: 2.5rem;
+    }
+    .hero-cta {
+      display: inline-flex; gap: 1rem; flex-wrap: wrap; justify-content: center;
+    }
+    .btn {
+      padding: 0.75rem 1.8rem;
+      border-radius: 30px;
+      font-size: 0.95rem; font-weight: 600;
+      text-decoration: none;
+      transition: all 0.22s;
+    }
+    .btn-primary {
+      background: var(--red); color: var(--white);
+      border: 2px solid var(--red);
+    }
+    .btn-primary:hover { background: #c1121f; border-color: #c1121f; }
+    .btn-outline {
+      background: transparent; color: var(--dark);
+      border: 2px solid var(--dark);
+    }
+    .btn-outline:hover { background: var(--dark); color: var(--white); }
+
+    .hero-scroll {
+      margin-top: 3.5rem;
+      font-size: 0.78rem; color: var(--mid);
+      letter-spacing: 0.08em; text-transform: uppercase;
+      animation: bounce 2s infinite;
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(6px); }
+    }
+
+    /* ── SECTIONS ────────────────────────────────────────────────── */
+    section { padding: 5rem 2rem; }
+    .container { max-width: 860px; margin: 0 auto; }
+
+    .section-label {
+      font-size: 0.75rem; font-weight: 600; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--red);
+      margin-bottom: 0.6rem;
+    }
+    h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.7rem, 4vw, 2.4rem);
+      color: var(--dark);
+      margin-bottom: 1.2rem;
+    }
+    .lead {
+      font-size: 1.05rem; color: var(--mid); font-weight: 300;
+      max-width: 680px; margin-bottom: 2.5rem;
+    }
+
+    /* ── GRAPH SECTION ───────────────────────────────────────────── */
+    #graph-section { background: var(--light); }
+
+    .graph-wrap {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: 0 4px 30px rgba(0,0,0,0.07);
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    #speech-svg { width: 100%; height: 320px; display: block; }
+
+    .sentence-display {
+      text-align: center;
+      font-size: 1rem; color: var(--mid);
+      min-height: 1.8rem;
+      margin-bottom: 1rem;
+      font-style: italic;
+    }
+    .sentence-display .current-word {
+      color: var(--red); font-weight: 700; font-style: normal;
+    }
+
+    .graph-controls {
+      display: flex; justify-content: center; gap: 0.8rem;
+      margin-top: 1rem;
+    }
+    .ctrl-btn {
+      padding: 0.5rem 1.4rem;
+      border-radius: 20px;
+      border: 1.5px solid var(--dark);
+      background: transparent;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.85rem; font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .ctrl-btn:hover, .ctrl-btn.active {
+      background: var(--dark); color: var(--white);
+    }
+
+    .graph-legend {
+      display: flex; gap: 1.5rem; flex-wrap: wrap;
+      margin-top: 1.5rem;
+      font-size: 0.85rem; color: var(--mid);
+    }
+    .legend-item { display: flex; align-items: center; gap: 0.4rem; }
+    .legend-dot {
+      width: 12px; height: 12px; border-radius: 50%;
+      background: var(--node); border: 1.5px solid var(--node-stroke);
+    }
+    .legend-line {
+      width: 24px; height: 2px; background: #555;
+      position: relative;
+    }
+    .legend-line.new { background: var(--dark); }
+    .legend-line.back { background: var(--red); }
+
+    /* ── METRICS ─────────────────────────────────────────────────── */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.2rem;
+      margin-top: 2rem;
+    }
+    .metric-card {
+      background: var(--white);
+      border: 1.5px solid rgba(0,0,0,0.07);
+      border-radius: var(--radius);
+      padding: 1.6rem;
+      transition: box-shadow 0.2s;
+    }
+    .metric-card:hover { box-shadow: 0 8px 30px rgba(0,0,0,0.08); }
+    .metric-abbr {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.6rem;
+      color: var(--red);
+      margin-bottom: 0.3rem;
+    }
+    .metric-name {
+      font-size: 0.78rem; font-weight: 600; color: var(--mid);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      margin-bottom: 0.7rem;
+    }
+    .metric-desc { font-size: 0.9rem; color: var(--mid); font-weight: 300; }
+
+    /* ── FINDINGS ────────────────────────────────────────────────── */
+    #findings { background: var(--dark); color: var(--white); }
+    #findings .section-label { color: var(--orange); }
+    #findings h2 { color: var(--white); }
+    #findings .lead { color: rgba(255,255,255,0.65); }
+
+    .findings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 1.2rem;
+      margin-top: 2rem;
+    }
+    .finding-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: var(--radius);
+      padding: 1.6rem;
+    }
+    .finding-card h3 {
+      font-family: 'Times New Roman', Times, serif;
+      font-size: 1.05rem; font-weight: 700;
+      color: var(--orange);
+      margin-bottom: 0.6rem;
+    }
+    .finding-card p {
+      font-family: 'Times New Roman', Times, serif;
+      font-size: 0.95rem;
+      color: rgba(255,255,255,0.72);
+      font-weight: 400;
+      line-height: 1.6;
+    }
+
+    /* ── FOOTER ──────────────────────────────────────────────────── */
+    footer {
+      text-align: center;
+      padding: 3rem 2rem;
+      background: var(--light);
+      font-size: 0.85rem;
+      color: var(--mid);
+    }
+    footer a { color: var(--red); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+    footer .divider { margin: 0 0.6rem; opacity: 0.4; }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="logo">Speech<span>Graph</span></a>
+  <a href="https://github.com/EvannR/SpeechGraph_Rabeau_master_thesis" class="gh-link" target="_blank">GitHub ↗</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-tag">Master's Thesis · VITAM Research Group</div>
+  <h1>When speech becomes<br>a <span>graph</span></h1>
+  <p>Analyzing the structural properties of verbal narratives in Schizophrenia Spectrum Disorder using network-based metrics.</p>
+  <div class="hero-cta">
+    <a href="#graph-section" class="btn btn-primary">See how it works</a>
+    <a href="https://github.com/EvannR/SpeechGraph_Rabeau_master_thesis" class="btn btn-outline" target="_blank">View on GitHub</a>
+  </div>
+  <div class="hero-scroll">↓ &nbsp; scroll to explore</div>
+</section>
+
+<!-- WHAT IS A SPEECH GRAPH -->
+<section id="graph-section">
+  <div class="container">
+    <div class="section-label">The concept</div>
+    <h2>What is a speech graph?</h2>
+    <p class="lead">
+      Each word in a transcript becomes a <strong>node</strong>. Consecutive words are connected by a directed <strong>edge</strong>.
+      When a word repeats, the edge loops back to the existing node — revealing the cyclical structure of speech.
+    </p>
+
+    <div class="graph-wrap">
+      <div class="sentence-display" id="sentence-display">Press <strong>Play</strong> to animate</div>
+      <svg id="speech-svg" viewBox="0 0 800 300"></svg>
+      <div class="graph-controls">
+        <button class="ctrl-btn" id="btn-play">▶ Play</button>
+        <button class="ctrl-btn" id="btn-reset">↺ Reset</button>
+      </div>
+    </div>
+
+    <div class="graph-legend">
+      <div class="legend-item">
+        <div class="legend-dot"></div> Word (node)
+      </div>
+      <div class="legend-item">
+        <div class="legend-line new"></div> New transition
+      </div>
+      <div class="legend-item">
+        <div class="legend-line back" style="background:var(--red)"></div> Repeated word → backward edge
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- METRICS -->
+<section id="metrics">
+  <div class="container">
+    <div class="section-label">Graph metrics</div>
+    <h2>Three structural measures</h2>
+    <p class="lead">Each verbatim produces a directed graph. Three metrics capture complementary aspects of narrative structure.</p>
+
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-abbr">LSCC</div>
+        <div class="metric-name">Largest Strongly Connected Component</div>
+        <div class="metric-desc">The biggest cluster of words mutually reachable by following directed edges — a proxy for narrative cohesion.</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-abbr">AD</div>
+        <div class="metric-name">Average Degree</div>
+        <div class="metric-desc">Edges divided by nodes. Captures how densely connected the word transitions are — a measure of lexical connectivity.</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-abbr">ASPL</div>
+        <div class="metric-name">Average Shortest Path Length</div>
+        <div class="metric-desc">Mean number of steps between any two nodes in the LSCC — reflects how tightly the speech network is organized.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FINDINGS -->
+<section id="findings">
+  <div class="container">
+    <div class="section-label">Key results</div>
+    <h2>What we found</h2>
+    <p class="lead">
+      119 French-speaking adults (50 SSD, 68 controls) each described 9 picture sequences across 3 difficulty levels.
+      Linear mixed models revealed distinct group-level differences in graph structure.
+    </p>
+
+    <div class="findings-grid">
+      <div class="finding-card">
+        <h3>Reduced LSCC in SSD</h3>
+        <p>Individuals with SSD produced speech graphs with smaller strongly connected components, even after controlling for speech length.</p>
+      </div>
+      <div class="finding-card">
+        <h3>Higher Average Degree in SSD</h3>
+        <p>SSD speakers showed greater lexical repetition — more edges per node — suggesting narrower but more recycled vocabulary.</p>
+      </div>
+      <div class="finding-card">
+        <h3>Shorter ASPL in SSD</h3>
+        <p>Path lengths within the LSCC were shorter for SSD, reflecting a more tightly looped, less expansive narrative structure.</p>
+      </div>
+      <div class="finding-card">
+        <h3>No Group × Level interaction</h3>
+        <p>Group differences were consistent across all three difficulty levels — referential complexity did not amplify or reduce the SSD effect.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>
+    Evann Rabeau · Master's thesis · VITAM Research Group
+    <span class="divider">|</span>
+    <a href="https://github.com/EvannR/SpeechGraph_Rabeau_master_thesis" target="_blank">GitHub repository</a>
+  </p>
+</footer>
+
+<!-- GRAPH ANIMATION SCRIPT -->
+<script>
+  // ── Sentence and graph definition ────────────────────────────────────────
+  const TOKENS = ['we','see','the','cat','the','cat','runs','and','the','cat','sleeps'];
+
+  // Unique nodes with hand-placed positions in the 800×300 viewBox
+  const NODES = {
+    'we':     { x: 90,  y: 150 },
+    'see':    { x: 220, y: 80  },
+    'the':    { x: 380, y: 150 },
+    'cat':    { x: 520, y: 80  },
+    'runs':   { x: 650, y: 150 },
+    'and':    { x: 520, y: 230 },
+    'sleeps': { x: 710, y: 250 },
+  };
+
+  const R = 32; // node radius
+
+  const svg = document.getElementById('speech-svg');
+  const display = document.getElementById('sentence-display');
+
+  let animTimer = null;
+  let step = 0;
+  let drawnNodes = new Set();
+  let drawnEdges = new Set();
+  const edgeGroup = document.createElementNS('http://www.w3.org/2000/svg','g');
+  const nodeGroup = document.createElementNS('http://www.w3.org/2000/svg','g');
+  svg.appendChild(edgeGroup);
+  svg.appendChild(nodeGroup);
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
+  function svgEl(tag, attrs) {
+    const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+    return el;
+  }
+
+  function drawNode(word) {
+    const { x, y } = NODES[word];
+    const g = svgEl('g', { class: 'node-group', opacity: 0 });
+
+    g.appendChild(svgEl('circle', {
+      cx: x, cy: y, r: R,
+      fill: '#FFC107', stroke: '#CC9900', 'stroke-width': 2.2,
+    }));
+    const txt = svgEl('text', {
+      x, y,
+      'text-anchor': 'middle',
+      'dominant-baseline': 'central',
+      'font-family': 'Inter, sans-serif',
+      'font-size': '13',
+      'font-weight': '600',
+      fill: '#1a1a2e',
+    });
+    txt.textContent = word;
+    g.appendChild(txt);
+    nodeGroup.appendChild(g);
+
+    // Fade in
+    let op = 0;
+    const fadeIn = setInterval(() => {
+      op = Math.min(op + 0.12, 1);
+      g.setAttribute('opacity', op);
+      if (op >= 1) clearInterval(fadeIn);
+    }, 20);
+
+    return g;
+  }
+
+  function pulseNode(word) {
+    const circles = nodeGroup.querySelectorAll('circle');
+    for (const c of circles) {
+      const cx = parseFloat(c.getAttribute('cx'));
+      const cy = parseFloat(c.getAttribute('cy'));
+      if (Math.abs(cx - NODES[word].x) < 1 && Math.abs(cy - NODES[word].y) < 1) {
+        c.setAttribute('fill', '#E63946');
+        setTimeout(() => c.setAttribute('fill', '#FFC107'), 400);
+        break;
+      }
+    }
+  }
+
+  function drawEdge(from, to, isBack) {
+    const key = `${from}->${to}`;
+    if (drawnEdges.has(key)) { pulseNode(to); return; }
+    drawnEdges.add(key);
+
+    const { x: x1, y: y1 } = NODES[from];
+    const { x: x2, y: y2 } = NODES[to];
+
+    // Arrow marker
+    const markerId = isBack ? 'arrow-red' : 'arrow-dark';
+    if (!svg.querySelector(`#${markerId}`)) {
+      const defs = svg.querySelector('defs') || svg.insertBefore(svgEl('defs', {}), svg.firstChild);
+      const marker = svgEl('marker', {
+        id: markerId, markerWidth: 8, markerHeight: 8,
+        refX: 6, refY: 3, orient: 'auto',
+      });
+      const poly = svgEl('polygon', {
+        points: '0 0, 8 3, 0 6',
+        fill: isBack ? '#E63946' : '#1a1a2e',
+      });
+      marker.appendChild(poly);
+      defs.appendChild(marker);
+    }
+
+    // Control point for curve
+    const mx = (x1 + x2) / 2;
+    const my = (y1 + y2) / 2;
+    const dx = x2 - x1, dy = y2 - y1;
+    const len = Math.sqrt(dx*dx + dy*dy);
+    const curve = isBack ? 70 : 0;
+    const cx = mx - (dy / len) * curve;
+    const cy = my + (dx / len) * curve;
+
+    const d = `M ${x1} ${y1} Q ${cx} ${cy} ${x2} ${y2}`;
+
+    const path = svgEl('path', {
+      d, fill: 'none',
+      stroke: isBack ? '#E63946' : '#1a1a2e',
+      'stroke-width': 2,
+      'stroke-opacity': 0.8,
+      'marker-end': `url(#${markerId})`,
+      'stroke-dasharray': 300,
+      'stroke-dashoffset': 300,
+    });
+    edgeGroup.appendChild(path);
+
+    // Animate dash
+    let offset = 300;
+    const drawLine = setInterval(() => {
+      offset = Math.max(offset - 18, 0);
+      path.setAttribute('stroke-dashoffset', offset);
+      if (offset <= 0) clearInterval(drawLine);
+    }, 16);
+  }
+
+  // ── Animation loop ───────────────────────────────────────────────────────
+  function tick() {
+    if (step >= TOKENS.length) {
+      display.innerHTML = '<em>Graph complete</em>';
+      document.getElementById('btn-play').textContent = '▶ Play';
+      return;
+    }
+
+    const word = TOKENS[step];
+    const prev = step > 0 ? TOKENS[step - 1] : null;
+    const isNew = !drawnNodes.has(word);
+    const isBack = prev && !isNew;
+
+    // Update sentence display
+    const shown = TOKENS.slice(0, step + 1).map((w, i) =>
+      i === step ? `<span class="current-word">${w}</span>` : w
+    ).join(' ');
+    display.innerHTML = shown;
+
+    if (isNew) {
+      drawNode(word);
+      drawnNodes.add(word);
+    } else {
+      pulseNode(word);
+    }
+
+    if (prev) drawEdge(prev, word, isBack);
+
+    step++;
+    animTimer = setTimeout(tick, 900);
+  }
+
+  function resetGraph() {
+    clearTimeout(animTimer);
+    edgeGroup.innerHTML = '';
+    nodeGroup.innerHTML = '';
+    drawnNodes.clear();
+    drawnEdges.clear();
+    step = 0;
+    display.innerHTML = 'Press <strong>Play</strong> to animate';
+    document.getElementById('btn-play').textContent = '▶ Play';
+  }
+
+  document.getElementById('btn-play').addEventListener('click', () => {
+    if (step >= TOKENS.length) resetGraph();
+    if (animTimer) { clearTimeout(animTimer); animTimer = null; document.getElementById('btn-play').textContent = '▶ Play'; return; }
+    document.getElementById('btn-play').textContent = '⏸ Pause';
+    tick();
+  });
+  document.getElementById('btn-reset').addEventListener('click', resetGraph);
+</script>
+
+</body>
+</html>
