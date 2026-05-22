@@ -488,29 +488,28 @@
       if (!defs) { defs = svgEl('defs', {}); svg.insertBefore(defs, svg.firstChild); }
       const marker = svgEl('marker', {
         id: markerId,
-        markerWidth: '14', markerHeight: '10',
-        refX: '13', refY: '5',
+        markerWidth: '12', markerHeight: '8',
+        refX: '12', refY: '4',
         orient: 'auto',
         markerUnits: 'userSpaceOnUse',
       });
-      marker.appendChild(svgEl('polygon', { points: '0 0, 14 5, 0 10', fill: color }));
+      marker.appendChild(svgEl('polygon', { points: '0 0, 12 4, 0 8', fill: color }));
       defs.appendChild(marker);
     }
 
-    // Stop path at circle boundary so arrowhead is not hidden behind node
-    const PAD = 14; // arrowhead length in user space
+    // Path stops exactly at the circle boundary; refX=12 places arrowhead tip there
     let d;
     if (!isBack) {
-      const sx = n1.x + R * dx/len,         sy = n1.y + R * dy/len;
-      const ex = n2.x - (R + PAD) * dx/len, ey = n2.y - (R + PAD) * dy/len;
+      const sx = n1.x + R * dx/len, sy = n1.y + R * dy/len;
+      const ex = n2.x - R * dx/len, ey = n2.y - R * dy/len;
       d = `M ${sx} ${sy} L ${ex} ${ey}`;
     } else {
-      const mx = (n1.x + n2.x) / 2,   my = (n1.y + n2.y) / 2;
-      const cpx = mx - (dy/len) * 70,  cpy = my + (dx/len) * 70;
-      const tdx = n2.x - cpx,          tdy = n2.y - cpy;
+      const mx = (n1.x + n2.x) / 2,  my = (n1.y + n2.y) / 2;
+      const cpx = mx - (dy/len) * 70, cpy = my + (dx/len) * 70;
+      const tdx = n2.x - cpx,         tdy = n2.y - cpy;
       const tlen = Math.sqrt(tdx*tdx + tdy*tdy);
-      const sx = n1.x + R * dx/len,             sy = n1.y + R * dy/len;
-      const ex = n2.x - (R + PAD) * tdx/tlen,   ey = n2.y - (R + PAD) * tdy/tlen;
+      const sx = n1.x + R * dx/len,          sy = n1.y + R * dy/len;
+      const ex = n2.x - R * tdx/tlen,        ey = n2.y - R * tdy/tlen;
       d = `M ${sx} ${sy} Q ${cpx} ${cpy} ${ex} ${ey}`;
     }
 
